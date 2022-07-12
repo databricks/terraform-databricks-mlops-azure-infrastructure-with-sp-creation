@@ -42,6 +42,53 @@ module "mlops_azure_infrastructure_with_sp_creation" {
 }
 ```
 
+### Usage example with [MLOps Azure Project Module with Service Principal Creation](https://registry.terraform.io/modules/databricks/mlops-azure-project-with-sp-creation/databricks/latest)
+```hcl
+provider "databricks" {
+  alias = "dev" # Authenticate using preferred method as described in Databricks provider
+}
+
+provider "databricks" {
+  alias = "staging"     # Authenticate using preferred method as described in Databricks provider
+}
+
+provider "databricks" {
+  alias = "prod"     # Authenticate using preferred method as described in Databricks provider
+}
+
+provider "azuread" {} # Authenticate using preferred method as described in AzureAD provider
+
+module "mlops_azure_infrastructure_with_sp_creation" {
+  source = "databricks/mlops-azure-infrastructure-with-sp-creation/databricks"
+  providers = {
+    databricks.dev = databricks.dev
+    databricks.staging = databricks.staging
+    databricks.prod = databricks.prod
+    azuread = azuread
+  }
+  staging_workspace_id          = "123456789"
+  prod_workspace_id             = "987654321"
+  azure_tenant_id               = "a1b2c3d4-e5f6-g7h8-i9j0-k9l8m7n6o5p4"
+  additional_token_usage_groups = ["users"]     # This field is optional.
+}
+
+module "mlops_azure_project_with_sp_creation" {
+  source = "databricks/mlops-azure-project-with-sp-creation/databricks"
+  providers = {
+    databricks.staging = databricks.staging
+    databricks.prod = databricks.prod
+    azuread = azuread
+  }
+  service_principal_name = "example-name"
+  project_directory_path = "/dir-name"
+  azure_tenant_id        = "a1b2c3d4-e5f6-g7h8-i9j0-k9l8m7n6o5p4"
+  service_principal_group_name = module.mlops_azure_infrastructure_with_sp_creation.service_principal_group_name 
+  # The above field is optional, especially since in this case service_principal_group_name will be mlops-service-principals either way, 
+  # but this also serves to create an implicit dependency. Can also be replaced with the following line to create an explicit dependency:
+  # depends_on             = [module.mlops_azure_infrastructure_with_sp_creation]
+}
+```
+
 ## Requirements
 | Name | Version |
 |------|---------|
@@ -67,6 +114,7 @@ module "mlops_azure_infrastructure_with_sp_creation" {
 |dev_secret_scope_prefix_for_staging|The prefix used in the dev workspace secret scope for remote model registry access to the staging workspace.|string|no|
 |dev_secret_scope_prefix_for_prod|The prefix used in the dev workspace secret scope for remote model registry access to the prod workspace.|string|no|
 |staging_secret_scope_prefix_for_prod|The prefix used in the staging workspace secret scope for remote model registry access to the prod workspace.|string|no|
+|service_principal_group_name|The name of the service principal group created in the staging and prod workspace.|string|no|
 
 ## Providers
 | Name | Authentication | Use |
